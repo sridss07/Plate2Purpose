@@ -1,67 +1,132 @@
-# 🍽️ Plate2Purpose - JavaFX
+# Plate2Purpose – Smart Food Donation Platform  
+### Desktop (JavaFX) + Mobile (Apache Cordova)
 
-**Plate2Purpose** is a **JavaFX-based desktop application** that connects **donors, NGOs, and recipients** for smarter food donation and waste management.  
-The project demonstrates how technology can reduce food waste and ensure surplus food reaches those in need efficiently.  
+Plate2Purpose is a technology-driven platform that connects food donors, NGOs, and recipients to reduce food waste and ensure surplus food reaches people in need efficiently.
 
----
+The system is built as a multi-platform solution:
+- Desktop application for management and coordination  
+- Mobile application for real-time field usage and quick response  
 
-## 🚀 Features
-- 🤝 **Donor → NGO Module** – Donors can enter food details, NGOs can accept requests.  
-- 📍 **Live Location Simulation** – Display donor and NGO locations on a map (via Google Maps API integration).  
-- 🔗 **QR Code Generation/Scan** – Each food donation is tracked with a QR code.  
-- 📊 **Donation Records** – Stores all transactions in a simple database (file/SQLite).  
-- 💬 **Notification Simulation** – Instant alert/confirmation when donations are accepted.  
 
----
+## Problem Statement
 
-## 🛠️ Tech Stack
-- **Language:** Java  
-- **Framework:** JavaFX (for GUI)  
-- **Database:** SQLite / MySQL / Text file (based on implementation)  
-- **APIs:** Google Maps API, QR Code libraries  
+Every day, large quantities of food are wasted while many people suffer from hunger.  
+Current food donation processes are unorganized, slow, and lack real-time coordination between donors and NGOs.
 
----
+There is a need for:
+- a centralized donation tracking system  
+- location-based coordination  
+- quick communication between stakeholders  
 
-## 🎯 Goals
-- Reduce **food waste**.  
-- Enable **transparent food donation tracking**.  
-- Support **UN SDG 2: Zero Hunger** and **SDG 12: Responsible Consumption & Production**.  
 
----
+## Solution Overview
 
-## ▶️ How to Run
-1. Clone this repository.  
-2. Open the project in **NetBeans** or **IntelliJ IDEA**.  
-3. Add **JavaFX SDK** to project libraries.  
-4. Configure SQLite/MySQL connection for database.  
-5. Run the `Main.java` file to start the application.  
+Plate2Purpose provides a digital platform where:
 
----
+- donors can register surplus food  
+- NGOs can accept and manage requests  
+- recipients can receive food faster  
+- donation flow can be tracked transparently  
 
-## 📂 Project Structure
-Plate2Purpose-JavaFX/
-├──  Plate2Purpose.java # Entry point of the app
-└── README.md # Project documentation
+The system integrates desktop and mobile interfaces for complete accessibility.
 
----
 
-## 📸 Screenshots
-<img width="613" height="531" alt="Screenshot (945)" src="https://github.com/user-attachments/assets/0261378c-d770-4850-8299-6f43a9a52e77" />
-<img width="613" height="536" alt="Screenshot (946)" src="https://github.com/user-attachments/assets/b33aa7e1-e880-4257-96d6-eab687f9b0ca" />
-<img width="810" height="599" alt="Screenshot (947)" src="https://github.com/user-attachments/assets/014f7b7f-7747-423c-ae14-78964fd2ceb4" />
-<img width="472" height="98" alt="Screenshot (949)" src="https://github.com/user-attachments/assets/fe020452-af06-403e-b1ee-544e08b31325" />
-<img width="619" height="530" alt="Screenshot (950)" src="https://github.com/user-attachments/assets/b38151d1-7868-4b8d-a70f-fead93c386f2" />
-<img width="876" height="724" alt="Screenshot (951)" src="https://github.com/user-attachments/assets/675ba529-1dae-42c5-99d9-3bcc43ce0f4f" />
-<img width="1616" height="921" alt="Screenshot (952)" src="https://github.com/user-attachments/assets/644a8a14-2d23-488e-8d1b-d20a668d2089" />
-<img width="571" height="226" alt="Screenshot (955)" src="https://github.com/user-attachments/assets/905f776d-193a-4bc2-b726-73d461489f9a" />
-<img width="635" height="629" alt="Screenshot (956)" src="https://github.com/user-attachments/assets/70ba0e20-68d3-47e0-be38-a6b84b2fd157" />
-<img width="616" height="664" alt="Screenshot (957)" src="https://github.com/user-attachments/assets/44689e1d-585b-4d2f-a72e-e87cb3bb30d1" />
-<img width="630" height="648" alt="Screenshot (958)" src="https://github.com/user-attachments/assets/b7c6b6e3-75ff-43af-a213-73aa7b1d08f6" />
-![WhatsApp Image 2025-08-23 at 20 32 31_412bdebe](https://github.com/user-attachments/assets/4790dcfc-4231-43b8-9497-8a256c3667de)
+## Platforms
 
----
+### Desktop Application
+- Built using JavaFX  
+- Used by NGOs/admin for monitoring and coordination  
+- Manages donation records and requests  
 
-## ✨ Credits
-Developed by **Sridhar R** 👨‍💻  
-Inspired by the vision to end hunger and reduce food waste.  
-Built with **JavaFX** for sustainable development. 
+### Mobile Application
+- Built using Apache Cordova  
+- Used by donors and volunteers  
+- Enables real-time notifications and location-based donation tracking  
+
+
+## Key Features
+
+- Donor → NGO connection module  
+- Live location mapping (Google Maps integration)  
+- QR code generation for donation tracking  
+- Notification system for donation acceptance  
+- Donation history and records  
+- Cross-platform accessibility (Desktop + Mobile)  
+
+
+## Tech Stack
+
+### Desktop
+- Language: Java  
+- Framework: JavaFX  
+
+### Mobile
+- Framework: Apache Cordova  
+- Languages: HTML, CSS, JavaScript  
+
+### Backend / Data
+- SQLite / MySQL / File-based storage  
+- Google Maps API integration  
+
+
+## Goals
+
+- Reduce food waste  
+- Improve NGO–donor coordination  
+- Enable transparent food donation tracking  
+- Support UN SDG 2: Zero Hunger  
+- Support UN SDG 12: Responsible Consumption  
+
+
+## How to Run
+
+### Desktop (JavaFX)
+
+1. Clone this repository  
+2. Open in NetBeans / IntelliJ  
+3. Add JavaFX SDK  
+4. Configure database (SQLite/MySQL)  
+5. Run main Java file  
+
+
+### Mobile (Cordova)
+
+1. Install Node.js  
+2. Install Cordova  
+3. Navigate to /cordova-mobile-app  
+4. Run:
+   cordova build android  
+   cordova run android  
+
+
+## Project Structure
+
+Plate2Purpose/
+ ├── javafx-app/            # Desktop application  
+ ├── cordova-mobile-app/    # Mobile application  
+ ├── screenshots/  
+ └── README.md  
+
+
+## Impact
+
+This project demonstrates how technology can:
+
+- reduce food waste  
+- improve logistics of food donation  
+- support social impact initiatives  
+- connect communities and NGOs effectively  
+
+
+## Future Enhancements
+
+- Real-time push notifications  
+- AI-based demand prediction  
+- Cloud database integration  
+- Volunteer tracking system  
+- Live donation analytics dashboard  
+
+
+## Author
+
+Developed as a social-impact technology project to address hunger and food waste through digital innovation.
