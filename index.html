@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>plate2purpose — Single-file Frontend</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary: #ff7e5f;
+      --success: #28a745;
+      --dark: #2c3e50;
+    }
+    body { font-family: Poppins, Arial, sans-serif; background:#f6f8fa; color:var(--dark); }
+    .navbar-brand { color:var(--primary); font-weight:700; }
+    .btn-success { background:var(--success); border-color:var(--success); }
+    .status-green { color:var(--success); background: rgba(40,167,69,0.08); padding:6px 10px; border-radius:12px; font-weight:600; }
+    #map { height: 380px; border-radius:8px; }
+    .toast-container { position: fixed; top: 18px; right: 18px; z-index: 9999; }
+    .role-pill { cursor:pointer; padding:8px 12px; border-radius:999px; border:1px solid #e6e6e6; display:inline-block; margin-right:8px; }
+    .role-pill.active { background: rgba(40,167,69,0.08); border-color: var(--success); color: var(--success); font-weight:600; }
+    .donation-icon { width:28px; height:28px; margin-right:8px; vertical-align:middle; }
+    .toast { margin-bottom:8px; border-radius:8px; padding:10px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+  </style>
+  <link rel="stylesheet" href="assets/ui-anime.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg bg-white shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" href="#">plate2purpose</a>
+      <div class="ms-auto d-flex gap-2">
+        <button id="nav-home" class="btn btn-light">Home</button>
+        <button id="nav-donor" class="btn btn-outline-success">Donor</button>
+        <button id="nav-ngo" class="btn btn-outline-primary">NGO</button>
+        <!-- Admin removed as requested -->
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <!-- Home -->
+    <section id="page-home">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h1>Connect. Donate. Transform.</h1>
+          <p class="lead">Donate excess food & clothing. Share live location so NGOs can collect. WhatsApp coordination included.</p>
+          <div>
+            <button class="btn btn-success me-2" onclick="go('donor')">I'm a Donor</button>
+            <button class="btn btn-primary" onclick="go('ngo')">I'm an NGO</button>
+          </div>
+        </div>
+        <div class="col-md-6 text-center">
+          <img src="https://cdn.pixabay.com/photo/2017/02/10/12/03/volunteer-2055010_1280.png" style="max-width:320px" alt="volunteer">
+        </div>
+      </div>
+    </section>
+
+    <!-- Auth (login/register local) -->
+    <section id="page-auth" class="d-none">
+      <div class="row">
+        <div class="col-md-6">
+          <div id="auth-forms" class="card p-3 shadow-sm">
+            <h5 id="auth-title">Donor — Login / Register</h5>
+            <div class="mb-3">
+              <span class="role-pill active" data-role="donor" onclick="selectRole(this)">Donor</span>
+              <span class="role-pill" data-role="ngo" onclick="selectRole(this)">NGO</span>
+            </div>
+            <div id="login-box">
+              <h6>Login</h6>
+              <div id="login-error" class="alert alert-danger d-none"></div>
+              <div class="mb-2">
+                <input id="login-email" class="form-control" placeholder="Email" type="email">
+              </div>
+              <div class="mb-2">
+                <input id="login-password" class="form-control" placeholder="Password" type="password">
+              </div>
+              <div class="d-flex gap-2">
+                <button id="btn-login" class="btn btn-success" onclick="login()">Login</button>
+                <button class="btn btn-outline-secondary" onclick="showRegister()">Register</button>
+                <button class="btn btn-light ms-auto" onclick="backHome()">Back</button>
+              </div>
+            </div>
+            <div id="register-box" class="d-none">
+              <h6>Register</h6>
+              <div id="register-error" class="alert alert-danger d-none"></div>
+              <div class="mb-2"><input id="reg-name" class="form-control" placeholder="Full name"></div>
+              <div class="mb-2"><input id="reg-email" class="form-control" placeholder="Email" type="email"></div>
+              <div class="mb-2"><input id="reg-phone" class="form-control" placeholder="Phone"></div>
+              <div class="mb-2"><input id="reg-password" class="form-control" placeholder="Password" type="password"></div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-success" onclick="register()">Create account</button>
+                <button class="btn btn-outline-secondary" onclick="showLogin()">Back to login</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card p-3 shadow-sm">
+            <h6>How it works</h6>
+            <ol>
+              <li>Donor registers / logs in and posts donation (food / clothing) with location.</li>
+              <li>NGOs open their dashboard, see donor pins on a map and can claim.</li>
+              <li>WhatsApp preview provided to coordinate (message shown — no phone needed).</li>
+            </ol>
+            <div class="mt-3">
+              <div class="status-green">Status: Frontend-only prototype (no backend)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Donor -->
+    <section id="page-donor" class="d-none">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card p-3 shadow-sm">
+            <h5>Post Donation</h5>
+            <div id="donor-msg" class="alert d-none"></div>
+            <div class="mb-2">
+              <label>Type</label>
+              <select id="don-type" class="form-select">
+                <option value="food">Food</option>
+                <option value="clothing">Clothing</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="mb-2"><input id="don-qty" class="form-control" placeholder="Quantity (e.g., 20 plates / 10 bags)"></div>
+            <div class="mb-2"><input id="don-address" class="form-control" placeholder="Pickup address (or leave blank to use GPS)"></div>
+            <div class="mb-2"><textarea id="don-desc" class="form-control" placeholder="Description / instructions"></textarea></div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-success" onclick="submitDonation()">Submit donation</button>
+              <button class="btn btn-outline-secondary" onclick="donorLogout()">Logout</button>
+              <button class="btn btn-light ms-auto" onclick="triggerShareLocation()">Share location now</button>
+            </div>
+            <div class="small text-muted mt-2">Your location will be captured (you can decline if you prefer).</div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card p-3 shadow-sm">
+            <h5>My Donations</h5>
+            <div id="my-donations">No donations yet (will appear after submission).</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NGO -->
+    <section id="page-ngo" class="d-none">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="card p-3 shadow-sm">
+            <h5>NGO Dashboard <small class="text-muted">Live donations map</small></h5>
+            <div id="map"></div>
+            <div class="mt-2 d-flex gap-2">
+              <button class="btn btn-success" onclick="refreshDonations()">Refresh</button>
+              <button class="btn btn-outline-secondary" onclick="ngoLogout()">Logout</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h6>Nearby Donations</h6>
+            <div id="ngo-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- WhatsApp preview modal (frontend proof) -->
+  <div class="modal" tabindex="-1" id="waModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">WhatsApp message preview</h5>
+          <button type="button" class="btn-close" onclick="hideWAModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p id="waText" style="white-space:pre-wrap;"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" onclick="copyWA()">Copy</button>
+          <a id="waOpen" class="btn btn-success" target="_blank" rel="noopener">Open WhatsApp (preview)</a>
+          <button class="btn btn-light" onclick="hideWAModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+  // FRONTEND-ONLY implementation using localStorage
+  // Keeps UI/flow/design as-is. No backend calls.
+
+  // helper: toasts
+  function toast(msg, type='success') {
+    const t = document.createElement('div');
+    t.className = 'toast align-items-center show';
+    t.style.minWidth = '260px';
+    t.style.marginBottom = '8px';
+    t.innerHTML = `<div class="toast-body">${msg}</div>`;
+    if (type === 'success') t.style.background = '#dff0df';
+    if (type === 'error') t.style.background = '#fde2e2';
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(()=> t.remove(), 3000);
+  }
+
+  // small storage helpers
+  function getUsers() {
+    return JSON.parse(localStorage.getItem('p2p_users') || '[]');
+  }
+  function saveUsers(u) { localStorage.setItem('p2p_users', JSON.stringify(u)); }
+  function getDonations() {
+    return JSON.parse(localStorage.getItem('p2p_donations') || '[]');
+  }
+  function saveDonations(d) { localStorage.setItem('p2p_donations', JSON.stringify(d)); }
+
+  // UI navigation and role selection
+  let currentRole = 'donor';
+  let map, markers = {}, watchId = null;
+
+  document.getElementById('nav-home').onclick = () => showPage('page-home');
+  document.getElementById('nav-donor').onclick = () => go('donor');
+  document.getElementById('nav-ngo').onclick = () => go('ngo');
+
+  function showPage(id) {
+    document.querySelectorAll('main section').forEach(s => s.classList.add('d-none'));
+    document.getElementById(id).classList.remove('d-none');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function go(type) {
+    currentRole = type;
+    document.getElementById('auth-title').innerText = type.charAt(0).toUpperCase() + type.slice(1) + ' — Login / Register';
+    document.querySelectorAll('.role-pill').forEach(p => { p.classList.toggle('active', p.dataset.role === type); });
+    showPage('page-auth');
+  }
+  function backHome(){ showPage('page-home'); }
+  function selectRole(el) {
+    document.querySelectorAll('.role-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    currentRole = el.dataset.role;
+    document.getElementById('auth-title').innerText = currentRole.charAt(0).toUpperCase() + currentRole.slice(1) + ' — Login / Register';
+  }
+
+  // Register (local)
+  function register() {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = (document.getElementById('reg-email').value || '').trim().toLowerCase();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!name || !email || !password) {
+      document.getElementById('register-error').classList.remove('d-none');
+      document.getElementById('register-error').innerText = 'Please fill required fields';
+      return;
+    }
+    const users = getUsers();
+    if (users.find(u => u.email === email)) {
+      document.getElementById('register-error').classList.remove('d-none');
+      document.getElementById('register-error').innerText = 'Email already registered';
+      return;
+    }
+    const id = Date.now();
+    users.push({ id:id, role: currentRole, name, email, phone, password });
+    saveUsers(users);
+    document.getElementById('register-error').classList.add('d-none');
+    toast('Registered — please login', 'success');
+    showLogin();
+  }
+
+  function showRegister(){ document.getElementById('login-box').classList.add('d-none'); document.getElementById('register-box').classList.remove('d-none'); }
+  function showLogin(){ document.getElementById('register-box').classList.add('d-none'); document.getElementById('login-box').classList.remove('d-none'); }
+
+  // Login (local)
+  function login() {
+    document.getElementById('login-error').classList.add('d-none');
+    const email = (document.getElementById('login-email').value || '').trim().toLowerCase();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) {
+      document.getElementById('login-error').classList.remove('d-none');
+      document.getElementById('login-error').innerText = 'Missing fields';
+      return;
+    }
+    const users = getUsers();
+    const user = users.find(u => u.email === email);
+    if (!user || user.password !== password || user.role !== currentRole) {
+      document.getElementById('login-error').classList.remove('d-none');
+      document.getElementById('login-error').innerText = 'Incorrect username or password';
+      return;
+    }
+    // success
+    localStorage.setItem('p2p_current_user', JSON.stringify({ id:user.id, role:user.role, name:user.name, email:user.email }));
+    toast('Welcome, ' + (user.name || 'user'), 'success');
+    if (user.role === 'donor') showDonor();
+    else if (user.role === 'ngo') showNgo();
+  }
+
+  function getCurrentUser() {
+    return JSON.parse(localStorage.getItem('p2p_current_user') || 'null');
+  }
+  function logoutCommon() {
+    localStorage.removeItem('p2p_current_user');
+    stopLocationShare();
+  }
+  function donorLogout(){ logoutCommon(); showPage('page-home'); toast('Logged out','success'); }
+  function ngoLogout(){ logoutCommon(); showPage('page-home'); toast('Logged out','success'); }
+
+  // Donor: submit donation (local)
+  function submitDonation() {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'donor') { toast('Not authorized – login as donor', 'error'); return; }
+    const type = document.getElementById('don-type').value;
+    const qty = document.getElementById('don-qty').value.trim();
+    const address = document.getElementById('don-address').value.trim();
+    const desc = document.getElementById('don-desc').value.trim();
+
+    const donations = getDonations();
+    const id = Date.now();
+    // try immediate GPS if available
+    navigator.geolocation.getCurrentPosition((pos)=>{
+      const d = {
+        id, user_id: user.id, user_name: user.name, type, quantity: qty, address, description: desc,
+        lat: pos.coords.latitude, lon: pos.coords.longitude, status: 'pending', created_at: new Date().toLocaleString()
+      };
+      donations.unshift(d);
+      saveDonations(donations);
+      toast('Donation submitted — preview WhatsApp', 'success');
+      loadMyDonations();
+      previewWhatsAppForDonation(d);
+      startLocationShare(); // begin updating location for the latest pending donation
+    }, (err)=>{
+      // fallback: save without coords
+      const d = {
+        id, user_id: user.id, user_name: user.name, type, quantity: qty, address, description: desc,
+        lat: null, lon: null, status: 'pending', created_at: new Date().toLocaleString()
+      };
+      donations.unshift(d);
+      saveDonations(donations);
+      toast('Donation submitted (no GPS) — preview WhatsApp', 'success');
+      loadMyDonations();
+      previewWhatsAppForDonation(d);
+      // still can start watch if user later allows
+    }, { enableHighAccuracy:true, timeout:8000 });
+  }
+
+  // Show donor's own donations
+  function loadMyDonations() {
+    const user = getCurrentUser();
+    const el = document.getElementById('my-donations');
+    if (!user) { el.innerHTML = '<small class="text-muted">Not logged in</small>'; return; }
+    const all = getDonations();
+    const mine = all.filter(d => Number(d.user_id) === Number(user.id));
+    if (mine.length === 0) { el.innerHTML = '<small class="text-muted">No donations yet</small>'; return; }
+    let html = '<small class="text-muted">Your recent donations</small><ul class="list-group mt-2">';
+    mine.forEach(d => {
+      const icon = (d.type || '').toLowerCase().includes('food') ? 'assets/food-ramen.svg' : ((d.type||'').toLowerCase().includes('cloth') ? 'assets/mascot-kawaii.svg' : 'assets/food-onigiri.svg');
+      const qty = d.quantity ? `<small class="text-muted">${d.quantity}</small>` : '';
+      const coords = (d.lat && d.lon) ? `• Coords: ${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}` : '';
+      html += `<li class="list-group-item">
+        <div><img class="donation-icon" src="${icon}" alt=""> <strong>${d.type}</strong> ${qty}</div>
+        <div><small class="text-muted">${d.address || coords}</small></div>
+        <div><small class="d-block text-muted">${d.description || ''}</small></div>
+        <div class="mt-2"><span class="badge bg-${d.status === 'pending' ? 'warning text-dark' : 'secondary'}">${d.status}</span>
+        <span class="text-muted float-end">${d.created_at}</span></div>
+      </li>`;
+    });
+    html += '</ul>';
+    el.innerHTML = html;
+  }
+
+  // Location share: watch & update latest pending donation of this donor
+  function startLocationShare() {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'donor') return;
+    if (watchId) return;
+    if (!('geolocation' in navigator)) { console.log('no geo'); return; }
+    watchId = navigator.geolocation.watchPosition((pos)=>{
+      const lat = pos.coords.latitude, lon = pos.coords.longitude;
+      const donations = getDonations();
+      // update latest pending donation for this user
+      for (let i=0;i<donations.length;i++){
+        if (Number(donations[i].user_id) === Number(user.id) && donations[i].status === 'pending') {
+          donations[i].lat = lat; donations[i].lon = lon; donations[i].updated_at = new Date().toLocaleString();
+          saveDonations(donations);
+          loadMyDonations();
+          refreshDonations(); // update map for NGOs
+          break;
+        }
+      }
+    }, (err)=>{ console.log('watch error', err); }, { enableHighAccuracy:true, maximumAge:5000, timeout:10000 });
+  }
+  function stopLocationShare(){ if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; } }
+  function triggerShareLocation(){ // manual ping to start watch immediately
+    startLocationShare();
+    toast('Location sharing started (allow GPS)', 'success');
+  }
+
+  // NGO map + list (reads from localStorage)
+  function showNgo() {
+    showPage('page-ngo');
+    initMap();
+    refreshDonations();
+    // no interval required; NGOs can refresh manually or we can auto-refresh every 18s
+    if (window.ngoInterval) clearInterval(window.ngoInterval);
+    window.ngoInterval = setInterval(refreshDonations, 18000);
+  }
+
+  function initMap(){
+    if (!map) {
+      map = L.map('map').setView([20.5937,78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+    }
+  }
+
+  function isValidCoord(v) {
+    if (v === undefined || v === null) return false;
+    const n = Number(v);
+    if (isNaN(n)) return false;
+    if (Math.abs(n) < 0.000001) return false;
+    if (n < -180 || n > 180) return false;
+    return true;
+  }
+
+  function refreshDonations() {
+    initMap();
+    const listEl = document.getElementById('ngo-list');
+    const donations = getDonations();
+    // clear markers
+    Object.values(markers).forEach(m => { try { map.removeLayer(m); } catch(e){} });
+    markers = {};
+    listEl.innerHTML = '';
+    if (!donations || donations.length === 0) { listEl.innerHTML = '<small class="text-muted">No donations</small>'; return; }
+    donations.forEach(d => {
+      const addr = (d.address || '').trim();
+      const gmapListLink = (isValidCoord(d.lat) && isValidCoord(d.lon))
+        ? `https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lon}&travelmode=driving`
+        : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr || '')}&travelmode=driving`;
+      const gIcon = (d.type || '').toLowerCase().includes('food') ? 'assets/food-ramen.svg' : ((d.type || '').toLowerCase().includes('cloth') ? 'assets/mascot-kawaii.svg' : 'assets/food-onigiri.svg');
+      const displayQty = d.quantity || '';
+      const placeTitle = addr ? addr : (d.description ? d.description.split('\n')[0] : (d.type || 'Donation'));
+      const item = document.createElement('div');
+      item.className = 'mb-2 border-bottom pb-2';
+      item.innerHTML = `
+        <div class="mb-1"><img class="donation-icon" src="${gIcon}" alt=""> <strong>${placeTitle}</strong></div>
+        <div><small class="text-muted">${d.type} ${displayQty ? '• ' + displayQty : ''}</small></div>
+        <div><small class="d-block text-muted mt-2">${d.description || ''}</small></div>
+        <div class="mt-2"><small class="text-muted">Posted: ${d.created_at}</small></div>
+        <div class="mt-1">
+          <button class="btn btn-sm btn-success" onclick="claimDonationLocal(${d.id})"><i class="fas fa-check"></i> Claim</button>
+          <a class="btn btn-sm btn-outline-primary ms-1" href="#" onclick="previewWhatsAppForDonationId(${d.id}); return false;"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+          <a class="btn btn-sm btn-outline-secondary ms-1" href="${gmapListLink}" target="_blank" rel="noopener"><i class="fas fa-location-arrow"></i> Directions</a>
+        </div>`;
+      listEl.appendChild(item);
+
+      if (isValidCoord(d.lat) && isValidCoord(d.lon)) {
+        const lat = Number(d.lat), lon = Number(d.lon);
+        const m = L.marker([lat,lon]).addTo(map);
+        const gmapLink = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+        const popupHtml = `
+          <div><img class="donation-icon" src="${gIcon}" alt=""> <b>${d.type}</b> ${displayQty ? `<small class="text-muted">${displayQty}</small>` : ''}</div>
+          <div>${addr || ''}</div>
+          <div><small class="d-block text-muted">${d.description || ''}</small></div>
+          <div class="mt-1">
+            <button class="btn btn-sm btn-success" onclick="claimDonationLocal(${d.id})"><i class="fas fa-check"></i> Claim</button>
+            <a class="btn btn-sm btn-outline-primary ms-1" href="#" onclick="previewWhatsAppForDonationId(${d.id}); return false;"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+            <a class="btn btn-sm btn-outline-secondary ms-1" href="${gmapLink}" target="_blank" rel="noopener">Directions</a>
+          </div>`;
+        m.bindPopup(popupHtml);
+        m.on('dblclick', ()=> window.open(gmapLink, '_blank'));
+        markers[d.id] = m;
+      }
+    });
+  }
+
+  // Claim donation locally (NGO)
+  function claimDonationLocal(id) {
+    const user = getCurrentUser();
+    if (!user || user.role !== 'ngo') { toast('Login as NGO to claim', 'error'); return; }
+    const donations = getDonations();
+    const idx = donations.findIndex(x => Number(x.id) === Number(id));
+    if (idx === -1) { toast('Donation not found', 'error'); return; }
+    if (donations[idx].status !== 'pending') { toast('Already claimed or completed', 'error'); return; }
+    donations[idx].status = 'claimed';
+    donations[idx].claimed_by = user.id;
+    donations[idx].claimed_by_name = user.name;
+    saveDonations(donations);
+    toast('Donation claimed — open WhatsApp to coordinate', 'success');
+    refreshDonations();
+  }
+
+  // WhatsApp preview (no number required) - shows modal with message text
+  function previewWhatsAppForDonationId(id) {
+    const donations = getDonations();
+    const d = donations.find(x => Number(x.id) === Number(id));
+    if (!d) { toast('Donation not found', 'error'); return; }
+    previewWhatsAppForDonation(d);
+  }
+  function previewWhatsAppForDonation(d) {
+    // build text
+    let text = `Hello — regarding donation #${d.id} (${d.type}) by ${d.user_name || 'Donor'}.\n`;
+    if (d.quantity) text += `Quantity: ${d.quantity}\n`;
+    if (d.description) text += `Notes: ${d.description}\n`;
+    if (isValidCoord(d.lat) && isValidCoord(d.lon)) {
+      text += `Location: ${d.lat}, ${d.lon}\n`;
+      text += `Map: https://www.google.com/maps/search/?api=1&query=${d.lat},${d.lon}\n`;
+    } else if (d.address) {
+      text += `Address: ${d.address}\n`;
+      text += `Map: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.address)}\n`;
+    }
+    text += `\n(Preview message — no number attached)`;
+
+    // show modal
+    document.getElementById('waText').innerText = text;
+    // open link that pre-fills message but no number
+    const waLink = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    document.getElementById('waOpen').href = waLink;
+    showWAModal();
+  }
+
+  function showWAModal(){ document.getElementById('waModal').style.display = 'block'; document.getElementById('waModal').classList.add('show'); }
+  function hideWAModal(){ document.getElementById('waModal').style.display = 'none'; document.getElementById('waModal').classList.remove('show'); }
+  function copyWA(){
+    const txt = document.getElementById('waText').innerText;
+    navigator.clipboard.writeText(txt).then(()=> toast('Copied to clipboard','success')).catch(()=> toast('Copy failed','error'));
+  }
+
+  // Admin view function removed per request — admin functionality not included
+
+  // On load
+  showPage('page-home');
+  initMap();
+
+  // Auto-load donor donations into UI if logged in
+  // Also restore watch if donor was sharing previously
+  (function restoreSession(){
+    const cur = getCurrentUser();
+    if (cur) {
+      if (cur.role === 'donor') showDonor();
+      else if (cur.role === 'ngo') showNgo();
+    }
+  })();
+
+  // showDonor: navigate and populate
+  function showDonor() {
+    showPage('page-donor');
+    loadMyDonations();
+    startLocationShare();
+  }
+
+  </script>
+  <script src="assets/ui-anime.js"></script>
+</body>
+</html>
